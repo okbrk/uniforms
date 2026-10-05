@@ -82,6 +82,27 @@ describe('<AutoForm />', () => {
       expect(onChangeModel).toHaveBeenLastCalledWith({ a: 'a' });
     });
 
+    it('calls `onChangeModelWithKey`', () => {
+      const onChangeModelWithKey = jest.fn();
+      const schema = new SimpleSchema({ a: { type: String, optional: true } });
+      const bridge = new SimpleSchema2Bridge({ schema });
+      render(
+        <AutoForm onChangeModelWithKey={onChangeModelWithKey} schema={bridge}>
+          <AutoFields />
+        </AutoForm>,
+      );
+
+      const input = screen.getByLabelText('A');
+      fireEvent.change(input, { target: { value: 'a' } });
+
+      expect(onChangeModelWithKey).toHaveBeenCalledTimes(1);
+      expect(onChangeModelWithKey).toHaveBeenLastCalledWith(
+        { a: 'a' },
+        'a',
+        'a',
+      );
+    });
+
     it('updates `changed` and `changedMap`', () => {
       render(
         <AutoForm schema={schema}>

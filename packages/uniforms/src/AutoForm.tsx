@@ -16,6 +16,7 @@ import { ModelTransformMode, UnknownObject } from './types';
 export type AutoFormProps<Model extends UnknownObject> =
   ValidatedQuickFormProps<Model> & {
     onChangeModel?: (model: Model) => void;
+    onChangeModelWithKey?: (model: Model, key: string, value: unknown) => void;
   };
 
 export type AutoFormState<Model extends UnknownObject> =
@@ -68,7 +69,10 @@ export function Auto<Base extends typeof ValidatedQuickForm>(Base: Base) {
 
     getNativeFormProps() {
       const props = super.getNativeFormProps();
-      return omit(props, ['onChangeModel']) as typeof props;
+      return omit(props, [
+        'onChangeModel',
+        'onChangeModelWithKey',
+      ]) as typeof props;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -83,6 +87,9 @@ export function Auto<Base extends typeof ValidatedQuickForm>(Base: Base) {
         () => {
           if (this.props.onChangeModel) {
             this.props.onChangeModel(this.state.model);
+          }
+          if (this.props.onChangeModelWithKey) {
+            this.props.onChangeModelWithKey(this.state.model, key, value);
           }
         },
       );

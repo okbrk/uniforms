@@ -307,6 +307,37 @@ describe('ZodBridge', () => {
       expect(bridge.getField('a.b')).toBe(schema.shape.a.unwrap().shape.b);
     });
 
+    it('works with lazy', () => {
+      const inner = object({ b: string() });
+      const schema = object({ a: lazy(() => inner) });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getField('a')).toBe(schema.shape.a);
+      expect(bridge.getField('a.b')).toBe(inner.shape.b);
+    });
+
+    it('works with optional lazy', () => {
+      const inner = object({ b: string() });
+      const schema = object({ a: optional(lazy(() => inner)) });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getField('a.b')).toBe(inner.shape.b);
+    });
+
+    it('works with lazy in arrays', () => {
+      const inner = object({ b: string() });
+      const schema = object({ a: array(lazy(() => inner)) });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getField('a.$')).toBe(schema.shape.a.element);
+      expect(bridge.getField('a.$.b')).toBe(inner.shape.b);
+    });
+
+    it('works with lazy root schema', () => {
+      const inner = object({ a: string() });
+      const schema = lazy(() => inner);
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getField('')).toBe(schema);
+      expect(bridge.getField('a')).toBe(inner.shape.a);
+    });
+
     it('works with ZodEffects', () => {
       const schema = object({}).refine(data => data);
       const bridge = new ZodBridge({ schema });
@@ -647,6 +678,27 @@ describe('ZodBridge', () => {
       expect(bridge.getSubfields('a')).toEqual(['b']);
       expect(bridge.getSubfields('a.b')).toEqual([]);
     });
+
+    it('works with lazy', () => {
+      const schema = object({ a: lazy(() => object({ b: string() })) });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getSubfields('a')).toEqual(['b']);
+      expect(bridge.getSubfields('a.b')).toEqual([]);
+    });
+
+    it('works with optional lazy', () => {
+      const schema = object({
+        a: optional(lazy(() => object({ b: string() }))),
+      });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getSubfields('a')).toEqual(['b']);
+    });
+
+    it('works with lazy root schema', () => {
+      const schema = lazy(() => object({ a: string(), b: number() }));
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getSubfields()).toEqual(['a', 'b']);
+    });
   });
 
   describe('#getType', () => {
@@ -696,6 +748,27 @@ describe('ZodBridge', () => {
       const schema = object({ a: nativeEnum(Test) });
       const bridge = new ZodBridge({ schema });
       expect(bridge.getType('a')).toBe(String);
+    });
+
+    it('works with lazy object', () => {
+      const schema = object({ a: lazy(() => object({ b: string() })) });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getType('a')).toBe(Object);
+      expect(bridge.getType('a.b')).toBe(String);
+    });
+
+    it('works with optional lazy object', () => {
+      const schema = object({
+        a: optional(lazy(() => object({ b: string() }))),
+      });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getType('a')).toBe(Object);
+    });
+
+    it('works with lazy root schema', () => {
+      const schema = lazy(() => object({ a: string() }));
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getType('')).toBe(Object);
     });
 
     it('works with number', () => {

@@ -12,6 +12,7 @@ import {
   ZodEnum,
   ZodError,
   ZodIssue,
+  ZodLazy,
   ZodNativeEnum,
   ZodNumber,
   ZodNumberDef,
@@ -27,6 +28,19 @@ function fieldInvariant(name: string, condition: boolean): asserts condition {
 
 function isNativeEnumValue(value: unknown) {
   return typeof value !== 'string';
+}
+
+// Lazy schemas are used to define recursive or deferred objects, so only those
+// resolving to an object are unwrapped.
+function unwrapLazyObject(field: ZodType): ZodType {
+  if (field instanceof ZodLazy) {
+    const schema: unknown = field.schema;
+    if (schema instanceof ZodObject) {
+      return schema;
+    }
+  }
+
+  return field;
 }
 
 function getLabel(value: unknown) {
@@ -117,6 +131,8 @@ export default class ZodBridge<T> extends Bridge {
       } else if (field instanceof ZodOptional) {
         field = field.unwrap();
       }
+
+      field = unwrapLazyObject(field);
 
       if (key === '$' || key === '' + parseInt(key, 10)) {
         fieldInvariant(name, field instanceof ZodArray);
@@ -251,6 +267,8 @@ export default class ZodBridge<T> extends Bridge {
       field = field.unwrap();
     }
 
+    field = unwrapLazyObject(field);
+
     if (field instanceof ZodArray) {
       return ['$'];
     }
@@ -269,6 +287,8 @@ export default class ZodBridge<T> extends Bridge {
     } else if (field instanceof ZodOptional) {
       field = field.unwrap();
     }
+
+    field = unwrapLazyObject(field);
 
     if (field instanceof ZodArray) {
       return Array;

@@ -18,6 +18,7 @@ import {
   nan,
   nativeEnum,
   never,
+  nullable,
   null as null_,
   number,
   object,
@@ -568,6 +569,18 @@ describe('ZodBridge', () => {
       expect(bridge.getProps('a')).toEqual({ label: 'A', required: false });
     });
 
+    it('works with nullable', () => {
+      const schema = object({ a: nullable(string()) });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getProps('a')).toEqual({ label: 'A', required: false });
+    });
+
+    it('works with nullish', () => {
+      const schema = object({ a: string().nullish() });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getProps('a')).toEqual({ label: 'A', required: false });
+    });
+
     it('works with string', () => {
       const schema = object({ a: string() });
       const bridge = new ZodBridge({ schema });
@@ -647,6 +660,20 @@ describe('ZodBridge', () => {
       expect(bridge.getSubfields('a')).toEqual(['b']);
       expect(bridge.getSubfields('a.b')).toEqual([]);
     });
+
+    it('works with nullable', () => {
+      const schema = object({ a: nullable(object({ b: string() })) });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getSubfields('a')).toEqual(['b']);
+      expect(bridge.getSubfields('a.b')).toEqual([]);
+    });
+
+    it('works with nullish', () => {
+      const schema = object({ a: object({ b: string() }).nullish() });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getSubfields('a')).toEqual(['b']);
+      expect(bridge.getSubfields('a.b')).toEqual([]);
+    });
   });
 
   describe('#getType', () => {
@@ -718,6 +745,18 @@ describe('ZodBridge', () => {
 
     it('works with optional', () => {
       const schema = object({ a: optional(string()) });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getType('a')).toBe(String);
+    });
+
+    it('works with nullable', () => {
+      const schema = object({ a: nullable(string()) });
+      const bridge = new ZodBridge({ schema });
+      expect(bridge.getType('a')).toBe(String);
+    });
+
+    it('works with nullish', () => {
+      const schema = object({ a: string().nullish() });
       const bridge = new ZodBridge({ schema });
       expect(bridge.getType('a')).toBe(String);
     });

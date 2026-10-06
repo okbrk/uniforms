@@ -13,6 +13,7 @@ import {
   ZodError,
   ZodIssue,
   ZodNativeEnum,
+  ZodNullable,
   ZodNumber,
   ZodNumberDef,
   ZodObject,
@@ -23,6 +24,19 @@ import {
 
 function fieldInvariant(name: string, condition: boolean): asserts condition {
   invariant(condition, 'Field not found in schema: "%s"', name);
+}
+
+function unwrapField(field: ZodType): ZodType {
+  while (
+    field instanceof ZodDefault ||
+    field instanceof ZodOptional ||
+    field instanceof ZodNullable
+  ) {
+    field =
+      field instanceof ZodDefault ? field.removeDefault() : field.unwrap();
+  }
+
+  return field;
 }
 
 function isNativeEnumValue(value: unknown) {
@@ -112,11 +126,7 @@ export default class ZodBridge<T> extends Bridge {
     }
 
     for (const key of joinName(null, name)) {
-      if (field instanceof ZodDefault) {
-        field = field.removeDefault();
-      } else if (field instanceof ZodOptional) {
-        field = field.unwrap();
-      }
+      field = unwrapField(field);
 
       if (key === '$' || key === '' + parseInt(key, 10)) {
         fieldInvariant(name, field instanceof ZodArray);
@@ -133,7 +143,7 @@ export default class ZodBridge<T> extends Bridge {
   getInitialValue(name: string): unknown {
     let field = this.getField(name);
 
-    if (field instanceof ZodOptional) {
+    while (field instanceof ZodOptional || field instanceof ZodNullable) {
       field = field.unwrap();
     }
 
@@ -188,11 +198,9 @@ export default class ZodBridge<T> extends Bridge {
       Object.assign(props, uniforms);
     }
 
-    if (field instanceof ZodDefault) {
-      field = field.removeDefault();
-      props.required = false;
-    } else if (field instanceof ZodOptional) {
-      field = field.unwrap();
+    const unwrapped = unwrapField(field);
+    if (unwrapped !== field) {
+      field = unwrapped;
       props.required = false;
     }
 
@@ -245,11 +253,7 @@ export default class ZodBridge<T> extends Bridge {
 
   getSubfields(name = '') {
     let field = this.getField(name);
-    if (field instanceof ZodDefault) {
-      field = field.removeDefault();
-    } else if (field instanceof ZodOptional) {
-      field = field.unwrap();
-    }
+    field = unwrapField(field);
 
     if (field instanceof ZodArray) {
       return ['$'];
@@ -264,11 +268,7 @@ export default class ZodBridge<T> extends Bridge {
 
   getType(name: string) {
     let field = this.getField(name);
-    if (field instanceof ZodDefault) {
-      field = field.removeDefault();
-    } else if (field instanceof ZodOptional) {
-      field = field.unwrap();
-    }
+    field = unwrapField(field);
 
     if (field instanceof ZodArray) {
       return Array;
